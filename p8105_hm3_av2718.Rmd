@@ -16,31 +16,70 @@ library(dplyr)
 
 ## Problem 2
 
-This problem focuses on the Accelerometers data. Below we import and clean data from `accel_data.csv`. The process begins with importing the data and replacing each space in the original variable names with `snake_case`:
+This problem focuses on the Accelerometers data. Below we import and clean data from `accel_data.csv`. The process begins with importing the data and cleaning the variables names:
 
 ```{r}
 library(readr)
-accel_data = read_csv("data/accel_data.csv") %% #import data
+accel_data = read_csv("data/accel_data.csv") %>% #import data
   janitor::clean_names() %>% # tidy variable names
-  mutate_if(is.double, as.numeric) #if double mutate variable to numeric
-
-head(accel_data, 8) #view first 8 rows of Accelorometers data
+  mutate_if(is.double, as.numeric) #if double mutate variable to   numeric
 ```
 
-The following code chuck we add a new a weekday vs weekend variable; and encode data with reasonable variable classes. The urine sample ID is spread across three columns, which correspond to three observation times. The original column names were informative but we don’t need to keep for the statistical analysis. To organize the data, we will remove some of the columns and then fix this issue using pivot_longer:
+We quickly recognize a problem: the `activity` data is spread across 1443 columns, which correspond to 1443 activity counts for each minute of a 24-hour day. To address this and organize the data, we will use `pivot_longer`to wangle the activity data and create two new variables `workweek` and `weekday`:
 
-# ```{r}
-# accel_data_tidy = 
-#   pivot_longer(
-#     accel_data,
-#     activity_1:activity_1440,
-#     names_to = "activity",
-#     values_to = "activity_data",
-#     names_prefix = "activity_"
-#   ) %>% 
-#   mutate(.data = ., 
-#          week_type = if_else(day %in% c("Saturday", "Sunday"), "weekend", "weekday"),
-#          day = fct_relevel(day, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")) 
-# 
-# ```
+
+```{r}
+accel_data_tidy =  
+  pivot_longer(   # organize activity data 
+    accel_data,
+    activity_1:activity_1440,
+    names_to = "time_course",
+    values_to = "activity_count",
+    names_prefix = "activity_"                  
+  ) %>%
+  mutate(.data = .,  # new weekday vs weekend variable
+         workweek = if_else(day %in% c("Saturday", "Sunday"), "weekend", "weekday"),
+         weekday = fct_relevel(day, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")) 
+
+head(accel_data_tidy, 8) #view first 8 rows of tidied data
+```
+
+The resulting dataset has only 6 variables: `r ls(accel_data_tidy)`, and a size of `r dim(accel_data_tidy)`. Using this tidied dataset, we will now aggregate across minutes to create a `total_activity` variable for each day, and create a table showing these totals:
+
+```{r}
+total_activity = accel_data_tidy %>%  
+  group_by(day,week) %>%           #Group total activity by day and week 
+  summarize(day_total = sum(activity_count)) %>% 
+  mutate(week = as.character(week))
+
+
+pivot_wider(                 #Create friendly table for "human readers"
+  total_activity,
+  names_from = "day",
+  values_from = "day_total"
+)
+
+```
+
+As expected, from the table, we can observe different total activity levels depending on the day of the week. The patient seems to be more active during the weekdays. However, the data presented in this table isn't enough to make any conclusions. We would need to conduct further analysis. Nonetheless, from this table, we can observe on Saturday, in weeks 4 and 5, two unusual measurements, possibly due to a device malfunction. It's good that we noticed this issue, as it would affect our analysis and results.  
+
+We will now use what we have learned in class to the inspection activity over the course of the day. In the code chuck below we will create a single-panel `plot` that shows the 24-hour activity time courses for each day and use color to indicate the day of the week:
+
+
+```{r}
+f1 = ggplot(accel_data_tidy, aes(x = time_course, y = activity_count, color = day))+
+  geom_line()+
+  theme_minimal()+
+  theme(legend.position = "bottom")+  # Legend in bottom
+  theme(plot.title = element_text(hjust = 0.5))+ # Center ggplot title
+  labs(
+    title = "24-hour Accelerometer Activity Count for Each Week Day",
+    x = "Time Course (Minutes)",
+    y = "Activity Count",
+  )
+
+f1
+```
+
+Based on this graph, we can say that the patient's physical activity fluctuates across the day. In general, we observe peak activity early in the day and a decrease in activity count during the middle of the day. During the weekdays, the patient seems to be more active in the morning and less active at night. On Saturday and Sunday, we observe more physical activity both in the morning and at night. However, it's difficult to describe a specific pattern or make a definite conclusion based on this graph alone. 
 
