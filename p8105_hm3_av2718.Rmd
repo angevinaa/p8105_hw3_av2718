@@ -129,7 +129,7 @@ ny_tidy %>%
   count(snow)
 ```
 
-As expected, we can observe from the most commonly observed value of `snow` is O, which makes sense since in New York it doesn't snow most of the year.
+As expected, we can observe from the most commonly observed value of `snow` is 0, which makes sense since in New York it doesn't snow most of the year.
 
 **Step 3:** In the following code chunk, we make a two-panel plot showing the average max temperature in January and July. To create the plot, we first have filter our `ny_noaa_tidy` data to select the maximum temperature data for the months of January and July. We then calculate the mean temperature and create the plot.
 
@@ -193,7 +193,7 @@ average_mintemp
 
 ```
 
-**Step 4:**  Below we make a two-panel plot showing tmax vs tmin for the full dataset: 
+**Step 4:**  Below we make a two-panel plot showing `tmax` vs `tmin` for the full dataset: 
 
 ```{r}
 
@@ -240,7 +240,7 @@ guide_area() + (plot_tmax + plot_tmin) +           # Combine plots using patchwo
 
 ```
 
-Lastly,we make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year:
+Lastly, we make a plot showing the distribution of `snowfall` values greater than 0 and less than 100 separately by year:
 
 ```{r}
 ny_snowfall = ny_tidy %>%
